@@ -33,7 +33,7 @@ A simple Flask API for managing tasks! This API provides CRUD operations for tas
 2. **Navigate to the project directory:**
 
     ```bash
-    cd task-api
+    cd swagger-api
     ```
 
 3. **Install the required packages:**
