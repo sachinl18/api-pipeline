@@ -18,4 +18,8 @@ steps:
 - script: |
     /home/ubuntu/.local/bin/pytest
   displayName: 'Run tests'
-
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'Api_pipeline'
+    publishLocation: 'Container'
