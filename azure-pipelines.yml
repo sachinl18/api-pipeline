@@ -16,5 +16,6 @@ steps:
   displayName: 'Install dependencies'
  
 - script: |
-    /path/to/pytest
+    /home/ubuntu/.local/bin/pytest
   displayName: 'Run tests'
+
