@@ -13,13 +13,18 @@ strategy:
     Python36:
       python.version: '3.6'
     Python37:
-      python.version: '3.7'  # Updated to Python 3.7
+      python.version: '3.7'
 
 steps:
 - task: UsePythonVersion@0
   inputs:
     versionSpec: '$(python.version)'
+    addToPath: true
+    architecture: 'x64'
+    continueOnError: false
   displayName: 'Use Python $(python.version)'
+  env:
+    GITHUB_TOKEN: $(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) 
 
 - script: |
     python -m pip install --upgrade pip
