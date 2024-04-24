@@ -8,7 +8,7 @@ trigger:
 
 pool:
   vmImage: ubuntu-latest
-  name: self-hosted
+  name: Self_hosted_Api
 
 strategy:
   matrix:
