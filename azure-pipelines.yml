@@ -24,8 +24,7 @@ steps:
     continueOnError: false
   displayName: 'Use Python $(python.version)'
   env:
-    GITHUB_TOKEN: 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  # Pass GitHub token as environment variable
-
+    GITHUB_TOKEN: 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
 - script: |
     python -m pip install --upgrade pip
     pip install -r requirements.txt
