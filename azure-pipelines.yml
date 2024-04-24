@@ -24,7 +24,7 @@ steps:
     continueOnError: false
   displayName: 'Use Python $(python.version)'
   env:
-    GITHUB_TOKEN: $(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) 
+    GITHUB_TOKEN: $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
 
 - script: |
     python -m pip install --upgrade pip
