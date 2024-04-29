@@ -3,7 +3,7 @@ trigger:
  
 pool:
   vmImage: 'ubuntu-latest'
-  name: Self_hosted_Api
+  name: demoforapi
 
 stages:
 - stage: Build
