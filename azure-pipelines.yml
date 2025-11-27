@@ -1,43 +1,84 @@
 trigger:
-- main
- 
+  branches:
+    include:
+      - main
+
 pool:
-  vmImage: 'ubuntu-latest'
-  name: demoforapi
+  name: 'migration'     
+variables:
+  AWS_REGION: 'ap-south-1'
+  LAMBDA_FUNCTION_NAME: 'myLambda'
+  JAR_FILE: 'build/libs/jb-hello-world-0.1.0.jar'
+  S3_BUCKET: 'sachin-s3-lambda-bucket'
+  S3_KEY: 'sachin-s3-lambda-bucket/jb-hello-world-0.1.0.jar'
 
 stages:
 - stage: Build
+  displayName: 'Build (Gradle)'
   jobs:
   - job: BuildJob
+    displayName: 'Gradle Build'
     steps:
     - script: |
-        python3 --version
-      displayName: 'Show Python version'
- 
+        echo "Java version:"
+        java -version || true
+        echo "Gradle (wrapper) version:"
+        ./gradlew -v || (echo "Gradle wrapper missing or not executable"; exit 1)
+      displayName: 'Verify build tools'
+
     - script: |
-        python3 -m pip install --upgrade pip
-        pip install -r requirements.txt
-      displayName: 'Install dependencies'
- 
-    - task: ArchiveFiles@2
-      inputs:
-        rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
-        includeRootFolder: false
-        archiveType: 'zip'
-        archiveFile: '$(build.artifactstagingdirectory)/task-api.zip'
-      displayName: 'Archive files'
- 
-    - task: PublishBuildArtifacts@1
-      inputs:
-        pathtoPublish: '$(build.artifactstagingdirectory)'
-        artifactName: 'task-api'
-        publishLocation: 'Container'
- 
-- stage: Test
+        chmod +x gradlew
+        ./gradlew clean build
+      displayName: 'Gradle: clean build'
+
+    - script: |
+        echo "Artifacts:"
+        ls -lah $(System.DefaultWorkingDirectory)/${{ variables.JAR_FILE }} || true
+      displayName: 'List build artifacts'
+
+    - publish: $(System.DefaultWorkingDirectory)/build/libs
+      artifact: drop
+      displayName: 'Publish build artifacts'
+
+- stage: UploadToS3
+  displayName: 'Upload artifact to S3'
+  dependsOn: Build
   jobs:
-  - job: TestJob
+  - job: UploadJob
+    displayName: 'S3 Upload'
     steps:
-    - script: |
-        pytest
-      displayName: 'Run tests'
- 
+    - task: AWSCLI@1
+      displayName: 'Upload JAR to S3'
+      inputs:
+        awsCredentials: 'aws-cred'                   # <-- Azure DevOps Service Connection name
+        regionName: '$(AWS_REGION)'
+        command: 's3'
+        arguments: "cp $(System.DefaultWorkingDirectory)/${JAR_FILE} s3://${S3_BUCKET}/${S3_KEY}"
+
+- stage: DeployLambda
+  displayName: 'Deploy to AWS Lambda'
+  dependsOn: UploadToS3
+  jobs:
+  - job: DeployJob
+    displayName: 'Update Lambda'
+    steps:
+    - task: AWSCLI@1
+      displayName: 'Update Lambda (from S3)'
+      inputs:
+        awsCredentials: 'aws-cred'
+        regionName: '$(AWS_REGION)'
+        command: 'lambda'
+        arguments: >
+          update-function-code
+          --region $(AWS_REGION)
+          --function-name $(LAMBDA_FUNCTION_NAME)
+          --s3-bucket $(S3_BUCKET)
+          --s3-key $(S3_KEY)
+
+    - task: AWSCLI@1
+      displayName: 'Verify Lambda (get-function)'
+      inputs:
+        awsCredentials: 'aws-cred'
+        regionName: '$(AWS_REGION)'
+        command: 'lambda'
+        arguments: 'get-function --function-name $(LAMBDA_FUNCTION_NAME)'
